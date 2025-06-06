@@ -1,6 +1,7 @@
 # Byte-compiled / optimized / DLL files
 CA4_2/.env
 CA4_2/.venv
+CA4_2/.venv-py310
 __pycache__/
 *.py[cod]
 *$py.class
