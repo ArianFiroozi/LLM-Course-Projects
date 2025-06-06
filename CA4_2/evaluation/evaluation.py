@@ -4,7 +4,7 @@ import json
 import argparse
 import sqlite3
 import multiprocessing as mp
-from func_timeout import func_timeout, FunctionTimedOut
+# from func_timeout import func_timeout, FunctionTimedOut
 
 def load_json(dir):
     with open(dir, 'r') as j:
@@ -30,22 +30,28 @@ def execute_sql(predicted_sql,ground_truth, db_path):
 
 
 
-def execute_model(predicted_sql,ground_truth, db_place, idx, meta_time_out):
+import sys
+from wrapt_timeout_decorator import timeout
+
+def execute_model(predicted_sql, ground_truth, db_place, idx, meta_time_out):
     try:
-        res = func_timeout(meta_time_out, execute_sql,
-                                  args=(predicted_sql, ground_truth, db_place))
+        # Dynamically apply the timeout using a nested function
+        @timeout(meta_time_out, use_signals=False)
+        def _run():
+            return execute_sql(predicted_sql, ground_truth, db_place)
+
+        res = _run()
+
     except KeyboardInterrupt:
         sys.exit(0)
-    except FunctionTimedOut:
-        result = [(f'timeout',)]
-        res = 0
     except Exception as e:
-        result = [(f'error',)]  # possibly len(query) > 512 or not executable
+        if "Timeout" in str(e):
+            result = [('timeout',)]
+        else:
+            result = [('error',)]
         res = 0
-    # print(result)
-    # result = str(set([ret[0] for ret in result]))
+
     result = {'sql_idx': idx, 'res': res}
-    # print(result)
     return result
 
 

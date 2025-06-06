@@ -6,7 +6,14 @@ import numpy as np
 import argparse
 import sqlite3
 import multiprocessing as mp
-from func_timeout import func_timeout, FunctionTimedOut
+# from func_timeout import func_timeout, FunctionTimedOut
+from wrapt_timeout_decorator import timeout
+
+@timeout(5)
+def your_function():
+    # Your code here
+    pass
+
 import time
 import math
 
@@ -52,25 +59,31 @@ def iterated_execute_sql(predicted_sql,ground_truth,db_path,iterate_num):
     return time_ratio
 
 
+# Wrap the inner function that you want to time
+@timeout(10, use_signals=False)  # default 10 seconds, will be overwritten
+def timed_iterated_execute_sql(predicted_sql, ground_truth, db_place, iterate_num):
+    return iterated_execute_sql(predicted_sql, ground_truth, db_place, iterate_num)
 
-def execute_model(predicted_sql,ground_truth, db_place, idx, iterate_num, meta_time_out):
+def execute_model(predicted_sql, ground_truth, db_place, idx, iterate_num, meta_time_out):
     try:
-        # you can personalize the total timeout number
-        # larger timeout leads to more stable ves
-        # while it needs more your patience....
-        time_ratio = func_timeout(meta_time_out * iterate_num, iterated_execute_sql,
-                                  args=(predicted_sql, ground_truth, db_place, iterate_num))
-        # print([idx, math.sqrt(time_ratio)])
+        # You can dynamically set timeout by wrapping inside another function
+        @timeout(meta_time_out * iterate_num, use_signals=False)
+        def _run():
+            return iterated_execute_sql(predicted_sql, ground_truth, db_place, iterate_num)
+
+        time_ratio = _run()
     except KeyboardInterrupt:
         sys.exit(0)
-    except FunctionTimedOut:
-        result = [(f'timeout',)]
-        time_ratio = 0
     except Exception as e:
-        result = [(f'error',)]  # possibly len(query) > 512 or not executable
+        if "Timeout" in str(e):
+            result = [('timeout',)]
+        else:
+            result = [('error',)]
         time_ratio = 0
+
     result = {'sql_idx': idx, 'time_ratio': time_ratio}
     return result
+
 
 
 def package_sqls(sql_path, db_root_path, mode='gpt', data_mode='dev'):
