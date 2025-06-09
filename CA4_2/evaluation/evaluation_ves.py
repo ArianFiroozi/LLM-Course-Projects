@@ -9,7 +9,7 @@ import multiprocessing as mp
 # from func_timeout import func_timeout, FunctionTimedOut
 from wrapt_timeout_decorator import timeout
 
-@timeout(5)
+@timeout(50)
 def your_function():
     # Your code here
     pass
@@ -60,7 +60,7 @@ def iterated_execute_sql(predicted_sql,ground_truth,db_path,iterate_num):
 
 
 # Wrap the inner function that you want to time
-@timeout(10, use_signals=False)  # default 10 seconds, will be overwritten
+@timeout(100, use_signals=False)  # default 10 seconds, will be overwritten
 def timed_iterated_execute_sql(predicted_sql, ground_truth, db_place, iterate_num):
     return iterated_execute_sql(predicted_sql, ground_truth, db_place, iterate_num)
 

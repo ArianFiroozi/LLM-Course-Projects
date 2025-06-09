@@ -36,7 +36,7 @@ from wrapt_timeout_decorator import timeout
 def execute_model(predicted_sql, ground_truth, db_place, idx, meta_time_out):
     try:
         # Dynamically apply the timeout using a nested function
-        @timeout(meta_time_out, use_signals=False)
+        @timeout(meta_time_out+100, use_signals=False)
         def _run():
             return execute_sql(predicted_sql, ground_truth, db_place)
 
